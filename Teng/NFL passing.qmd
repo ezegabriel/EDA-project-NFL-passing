@@ -78,24 +78,4 @@ install.packages("remotes")
 remotes::install_github("robkravec/ggfootball")
 ```
 
-```{r}
-library(ggplot2)
-
-# Function to draw the football field
-draw_field <- function() {
-  ggplot() +
-    geom_rect(aes(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3), fill = "forestgreen", color = NA) +  # Field dimensions including end zones
-    geom_rect(aes(xmin = 10, xmax = 110, ymin = 0, ymax = 53.3), fill = NA, color = "white") +  # Main field play area
-    geom_segment(aes(x = 0, xend = 120, y = 0, yend = 0), color = "white") +  # End lines
-    geom_segment(aes(x = 0, xend = 120, y = 53.3, yend = 53.3), color = "white") +
-    scale_x_continuous(name = "", breaks = seq(0, 120, 10), labels = c("0'", "10'", "20'", "30'", "40'", "50'", "40'", "30'", "20'", "10'", "0'")) +
-    scale_y_continuous(name = "", breaks = NULL) +
-    theme_void()
-}
-
-# Draw the football field
-football_field <- draw_field()
-print(football_field)
-
-
 ```
