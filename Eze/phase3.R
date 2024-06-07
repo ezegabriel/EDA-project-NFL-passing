@@ -8,7 +8,7 @@ nfl_passing |>
   geom_col()
 
 names(nfl_passing)
-
+ 
 nfl_passing |> 
   group_by(passer_player_name) |> 
   table(interception)
