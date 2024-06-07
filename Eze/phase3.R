@@ -7,11 +7,11 @@ nfl_passing |>
   ggplot(aes(y=complete_pass, x=pass_length))+
   geom_col()
 
-
+names(nfl_passing)
 
 nfl_passing |> 
   group_by(passer_player_name) |> 
-  count(touchdown)
+  table(interception)
 
 
 nfl_passing |> 
