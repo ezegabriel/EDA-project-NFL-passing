@@ -25,7 +25,8 @@ completion_rate |>
        x = 'Pass Length',
        y='Completion Rate',
        fill='Pass Location')+
-  theme(plot.title = element_text(hjust = .5, face='bold'))
+  theme(plot.title = element_text(hjust = .5, face='bold'),
+        legend.position = 'bottom')
 
 
 
@@ -57,7 +58,8 @@ epa_by_down_shotgun |>
              space = 'free',
              labeller = labeller(down = c('1' = "1st Down", '2' = '2nd Down', '3' = '3rd Down', '4' = '4th Down'))) +
   theme(plot.title = element_text(hjust = .5, face='bold'),
-        panel.spacing = unit(.5, 'lines')
+        panel.spacing = unit(.5, 'lines'),
+        legend.position = 'bottom'
   )
 
 
