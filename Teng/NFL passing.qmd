@@ -478,6 +478,6 @@ ggplot(nfl_passing_stats, aes(x = completion_rate, y = interception_rate, color 
        color = "Cluster") +
   theme_minimal() +
   theme(legend.position = "bottom") +
-  coord_fixed()  # adjust ratio according to the scale of data points
+  coord_fixed()  
 ```
 
