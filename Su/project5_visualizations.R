@@ -1,3 +1,10 @@
+library(ape)
+library(MASS)
+library(rgl)
+library(igraph)
+library(flexclust)
+library(pald)
+library(cluster.datasets)
 
 # Build the data set
 library(tidyverse)
@@ -23,8 +30,10 @@ nfl_passing <- nfl_pbp |>
     # description of play
     desc)
 
+
 # Data cleaning 
-# nfl_passing <- na.omit(nfl_passing)
+passing_clean <- na.omit(nfl_passing)
+
 
 
 # Visualizations
@@ -34,7 +43,7 @@ library(ggplot2)
 nfl_passing |> 
   select(passer_player_name, passer_player_id, posteam, posteam_type, complete_pass, interception) |> 
   group_by(posteam) |> 
-  summarize(total_pass = n(), num_complete = sum(complete_pass, na.rm = TRUE), complete_rate = total_pass / num_complete) |> 
+  summarize(total_pass = n(), num_complete = sum(complete_pass, na.rm = TRUE), complete_rate = num_complete / total_pass) |> 
   ggplot(aes(x = reorder(posteam, -complete_rate), y = complete_rate)) +
   geom_bar(stat = "identity", fill = "lightblue") +
   labs(title = "Complete-passing Rates",
@@ -74,7 +83,48 @@ nfl_passing |>
        x = "Team",
        y = "Average EPA",
        fill = "Complete Pass")
+
   
+# Clustering 
+
+## clustering 1: 
+
+M1 <- nfl_passing |> 
+  group_by(posteam) |> 
+  summarize(total_pass = n(),
+            num_complete = sum(complete_pass, na.rm = TRUE),
+            complete_rate = num_complete / total_pass,
+            num_interception = sum(interception, na.rm = TRUE),
+            interception_rate = num_interception / total_pass,
+            touchdown_rate = mean(touchdown, na.rm = TRUE),
+            avg_yards_gained = mean(yards_gained, na.rm = TRUE),
+            avg_epa = mean(epa, na.rm = TRUE),
+            qb_hit_rate = mean(qb_hit, na.rm = TRUE),
+            sack_rate = mean(sack, na.rm = TRUE)
+            )
+  
+M1 <- M1[, -c(2,3,5)] 
+rownames(M1) <- M1$posteam
+M1_revised <- M1[, -1]
+
+# standardizing M1
+M1_std <-scale(M1_revised, scale = TRUE)[,]; head(M1_std)
+rownames(M1_std) <- M1$posteam
+D <- as.matrix(dist(M1_std)); head(D)
+
+## clustering analysis
+plot(stepFlexclust(M1_std, nrep = 20, k = 2:10), type = "l")
+a<- 47; while(a > 43){q <- cclust(M1_std, k = 5, save.data = TRUE); a <- info(q, "distsum")}; sort(clusters(q)); a
+
+plot(q, project = prcomp(M1_std), asp=1, simlines=FALSE, points = FALSE)
+text(M1_std, labels = rownames(M1_std), cex = 0.7)
+
+barplot(q)
+
+
+
+
+
 
 
 
