@@ -1,0 +1,81 @@
+---
+title: "NFL passing"
+format: html
+editor: visual
+---
+
+## NFL Passing Data
+
+Tiger, Celine, Gabriel
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+```
+
+```{r}
+head(nfl_passing)
+str(nfl_passing)
+```
+
+```{r}
+summary(nfl_passing)
+```
+
+```{r}
+nfl_passing |> 
+  ggplot(aes(x = yards_gained)) +
+  geom_histogram() +
+  geom_rug(alpha = 0.5)
+```
+
+```{R}
+nfl_passing|> 
+  filter(complete_pass == 1 & no_huddle == 1) |>
+  ggplot(aes(x = play_clock, y = yards_gained)) +
+  geom_point(color = "darkred", size = 2, alpha = 0.5)
+```
+
+```{r}
+ nfl_passing %>% 
+  group_by(pass_length, pass_location) %>%
+  summarise(
+    Completion_Rate = mean(complete_pass, na.rm = TRUE),
+    Avg_Yards_Gained = mean(yards_gained, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  ggplot(aes(x = pass_length, y = Completion_Rate, fill = pass_location)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+    facet_grid(. ~ pass_location) +
+  labs(title = "Completion Rate by Pass Length and Location", 
+       x = "Pass Length", y = "Completion Rate") +
+  theme_minimal()
+```
+
+```{r}
+# Load the data
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Boxplot of WPA for QB hits vs no hits
+ggplot(nfl_passing, aes(x = as.factor(qb_hit), y = wpa, fill = as.factor(qb_hit))) +
+  geom_boxplot() +
+  labs(title = "Distribution of WPA for QB Hits vs. No Hits",
+       x = "Quarterback Hit (0 = No, 1 = Yes)",
+       y = "Win Probability Added (WPA)") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("No Hit", "Hit")) +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+```
+
+```{r}
+install.packages("remotes")
+remotes::install_github("robkravec/ggfootball")
+```
+
+```
