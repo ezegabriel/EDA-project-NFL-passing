@@ -27,13 +27,6 @@ str(nfl_passing)
 summary(nfl_passing)
 ```
 
-```{r}
-nfl_passing |> 
-  ggplot(aes(x = yards_gained)) +
-  geom_histogram() +
-  geom_rug(alpha = 0.5)
-```
-
 ```{R}
 nfl_passing|> 
   filter(complete_pass == 1 & no_huddle == 1) |>
@@ -74,8 +67,417 @@ ggplot(nfl_passing, aes(x = as.factor(qb_hit), y = wpa, fill = as.factor(qb_hit)
 ```
 
 ```{r}
-install.packages("remotes")
-remotes::install_github("robkravec/ggfootball")
+ggplot(nfl_passing, aes(x = air_yards, y = yards_gained, color = factor(complete_pass))) +
+  geom_point(alpha = 0.5) +  # Adds scatter points with a bit of transparency
+  geom_smooth(method = "lm", se = FALSE) +  # Adds a linear regression line without a confidence interval
+  labs(
+    title = "Relationship Between Air Yards and Yards Gained",
+    x = "Air Yards",
+    y = "Yards Gained",
+    color = "Touchdown"
+  ) +
+  scale_color_manual(values = c("red", "blue"), labels = c("No TD", "TD")) +
+  theme_minimal()
+```
+```{r}
+nfl_passing <- nfl_passing %>%
+  mutate(completion_rate = if_else(complete_pass == 1, 1, 0))
+
+# Group data by shotgun and no_huddle conditions and summarize epa and completion rate
+qb_performance <- nfl_passing %>%
+  group_by(shotgun, no_huddle) %>%
+  summarise(
+    avg_epa = mean(epa, na.rm = TRUE),
+    completion_percentage = mean(completion_rate, na.rm = TRUE) * 100
+  )
+
+# Plotting the results
+# EPA by shotgun vs. normal
+ggplot(qb_performance, aes(x = factor(shotgun), y = avg_epa, fill = factor(shotgun))) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Average EPA by Shotgun vs. Normal",
+       x = "Shotgun Formation",
+       y = "Average EPA",
+       fill = "Shotgun") +
+  theme_minimal()
+
+# Completion rate by no_huddle vs. huddle
+ggplot(qb_performance, aes(x = factor(no_huddle), y = completion_percentage, fill = factor(no_huddle))) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Completion Rate by No Huddle vs. Huddle",
+       x = "No Huddle",
+       y = "Completion Rate (%)",
+       fill = "No Huddle") +  theme_minimal()
 ```
 
+```{r}
+
+# Load your data
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Select and clean necessary variables
+nfl_passing <- nfl_passing %>%
+  select(pass_location, pass_length, epa, yards_gained, touchdown, complete_pass) %>%
+  filter(!is.na(pass_location), !is.na(pass_length))  # Ensure no NA values in key columns
+
+# Summary statistics for continuous variables by pass location and length
+summary_stats <- nfl_passing %>%
+  group_by(pass_location, pass_length) %>%
+  summarise(
+    avg_epa = mean(epa, na.rm = TRUE),
+    avg_yards = mean(yards_gained, na.rm = TRUE),
+    td_rate = mean(as.numeric(touchdown), na.rm = TRUE) * 100,
+    completion_rate = mean(as.numeric(complete_pass), na.rm = TRUE) * 100,
+    .groups = 'drop'
+  )
+
+# Visualization of EPA and Completion Rate by Pass Location and Length
+ggplot(nfl_passing, aes(x = pass_length, y = epa, fill = pass_location)) +
+  geom_bar(stat = "summary", fun = "mean") +
+  facet_wrap(~pass_location) +
+  labs(title = "Average EPA by Pass Length and Location",
+       x = "Pass Length",
+       y = "Average EPA",
+       fill = "Pass Location") +
+  theme_minimal()
+
+# Visualization of Touchdown Rate by Pass Location and Length
+ggplot(summary_stats, aes(x = pass_length, y = td_rate, fill = pass_location)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Touchdown Rate by Pass Length and Location",
+       x = "Pass Length",
+       y = "Touchdown Rate (%)",
+       fill = "Pass Location") +
+  theme_minimal()
+
+# Inferential Statistics: ANOVA to compare mean EPA across different pass lengths and locations
+anova_result <- aov(epa ~ pass_length * pass_location, data = nfl_passing)
+anova_summary <- summary(anova_result)
+
+# Display ANOVA summary
+print(anova_summary)
+
+# Post-hoc test if ANOVA is significant
+if (anova_summary[[1]]$'Pr(>F)'[1] < 0.05) {
+  post_hoc_results <- TukeyHSD(anova_result)
+  print(post_hoc_results)
+}
+
 ```
+
+```{r}
+library(tidyverse)
+# Load your data
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Select necessary variables and remove missing values
+nfl_passing <- nfl_passing %>%
+  select(pass_location, qb_hit, interception, sack) %>%
+  filter(!is.na(pass_location))  # Ensuring no NA values in pass location
+# Summary statistics for QB hit, interception, and sack rates by pass location
+location_stats <- nfl_passing %>%
+  group_by(pass_location) %>%
+  summarise(
+    hit_rate = mean(as.numeric(qb_hit), na.rm = TRUE) * 100,
+    interception_rate = mean(as.numeric(interception), na.rm = TRUE) * 100,
+    sack_rate = mean(as.numeric(sack), na.rm = TRUE) * 100,
+    .groups = 'drop'
+  )
+# Visualization of QB Hit, Interception, and Sack Rates by Pass Location
+ggplot(location_stats, aes(x = pass_location, fill = pass_location)) +
+  geom_bar(aes(y = hit_rate), stat = "identity", position = position_dodge(), alpha = 0.6) +
+  #geom_bar(aes(y = interception_rate), stat = "identity", position = position_dodge(), alpha = 0.6)
+  labs(title = "Rates of QB Hit, Interception by Pass Location",
+       x = "Pass Location",
+       y = "Rate (%)",
+       fill = "Pass Location") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1")  # Using a distinct color palette for clarity
+
+```
+```{r}
+library(tidyverse)
+# Load your data
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Select and clean necessary variables
+nfl_passing <- nfl_passing %>%
+  select(passer_player_name, pass_location, qb_hit) %>%
+  filter(!is.na(pass_location), !is.na(qb_hit))  # Ensure no NA values in key columns
+# Summary statistics for QB hit rates by passer and pass location
+qb_location_stats <- nfl_passing %>%
+  group_by(passer_player_name, pass_location) %>%
+  summarise(
+    hit_rate = mean(as.numeric(qb_hit), na.rm = TRUE) * 100,
+    .groups = 'drop'
+  )
+# Visualization of QB Hit Rates by Pass Location for each Quarterback
+ggplot(qb_location_stats, aes(x = pass_location, y = hit_rate, fill = pass_location)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~passer_player_name, scales = "free_y") +
+  labs(title = "Quarterback Hit Rates by Pass Location",
+       x = "Pass Location",
+       y = "Hit Rate (%)",
+       fill = "Pass Location") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Improve x-axis label readability
+
+```
+```{r}
+# Load your data
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Prepare the data
+nfl_passing <- nfl_passing %>%
+  select(passer_player_name, pass_location, qb_hit) %>%
+  filter(!is.na(pass_location), !is.na(qb_hit))
+
+# Calculate the total number of pass attempts per QB to rank and select top 5
+qb_pass_attempts <- nfl_passing %>%
+  group_by(passer_player_name) %>%
+  summarise(total_attempts = n(), .groups = 'drop') %>%
+  arrange(desc(total_attempts)) %>%
+  slice(1:5)  # Select the top 5 QBs based on the number of attempts
+
+# Join the data back to focus only on these top 5 quarterbacks
+nfl_passing_filtered <- nfl_passing %>%
+  inner_join(qb_pass_attempts, by = "passer_player_name")
+
+# Summary statistics for QB hit rates by passer and pass location
+qb_location_stats <- nfl_passing_filtered %>%
+  group_by(passer_player_name, pass_location) %>%
+  summarise(
+    hit_rate = mean(as.numeric(qb_hit), na.rm = TRUE) * 100,
+    .groups = 'drop'
+  )
+
+# Visualization of top 5 QBs
+ggplot(qb_location_stats, aes(x = pass_location, y = hit_rate, fill = pass_location)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~passer_player_name, scales = "free_y") +
+  labs(title = "Quarterback Hit Rates by Pass Location (Top 5 QBs)",
+       x = "Pass Location",
+       y = "Hit Rate (%)",
+       fill = "Pass Location") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+# cluster 1 avg_yards_gain and inteception rate
+```{r}
+library(tidyverse)
+
+# Load the data
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Select necessary variables and calculate completions
+nfl_passing <- nfl_passing %>%
+  select(passer_player_name, yards_gained, interception, complete_pass) %>%
+  mutate(complete_pass = as.numeric(complete_pass)) %>%
+  filter(!is.na(passer_player_name))  # Ensure no NA values in key columns
+
+# Create a table to count completions per QB
+completion_counts <- nfl_passing %>%
+  group_by(passer_player_name) %>%
+  summarise(total_completions = sum(complete_pass), .groups = 'drop')
+
+# Filter out QBs with fewer than 10 completions
+valid_qbs <- completion_counts %>%
+  filter(total_completions >= 10)
+
+# Join back to the original data to keep only relevant QBs
+nfl_passing_filtered <- nfl_passing %>%
+  semi_join(valid_qbs, by = "passer_player_name")
+
+# Proceed with further analysis on this filtered data
+
+```
+
+
+```{r}
+# Visualization of Top 10 Average Yards Gained per QB
+# Calculate the average yards gained and interception rate per QB
+nfl_passing_stats <- nfl_passing_filtered %>%
+  group_by(passer_player_name) %>%
+  summarise(
+    avg_yards_gained = mean(yards_gained, na.rm = TRUE),  # Average yards per attempt
+    interception_rate = mean(as.numeric(interception), na.rm = TRUE) * 100,  # Interception rate as a percentage
+    .groups = 'drop'
+  )
+
+# Determine the top 10 QBs for average yards gained
+top_yards_qbs <- nfl_passing_stats %>%
+  top_n(10, avg_yards_gained)
+
+# Determine the top 10 QBs for interception rate
+top_int_rate_qbs <- nfl_passing_stats %>%
+  top_n(10, interception_rate)  # Use desc to get the highest rates
+
+# Visualizations for the top 10 QBs
+# Visualization of Top 10 Average Yards Gained per QB
+ggplot(top_yards_qbs, aes(x = reorder(passer_player_name, avg_yards_gained), y = avg_yards_gained)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Top 10 QBs by Average Yards Gained",
+       x = "Quarterback",
+       y = "Average Yards Gained") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Visualization of Top 10 Interception Rates per QB
+ggplot(top_int_rate_qbs, aes(x = reorder(passer_player_name, -interception_rate), y = interception_rate)) +
+  geom_bar(stat = "identity", fill = "firebrick") +
+  labs(title = "Top 10 QBs by Interception Rate",
+       x = "Quarterback",
+       y = "Interception Rate (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+```{r}
+library(cluster)  # for clustering
+library(ggthemes)  # for better visualization themes
+
+# Assuming nfl_passing_stats is already loaded and contains avg_yards_gained and interception_rate
+# First, standardize the metrics
+nfl_passing_stats <- nfl_passing_stats %>%
+  mutate(
+    std_avg_yards = as.numeric(scale(avg_yards_gained, center = TRUE, scale = TRUE)),
+    std_interception_rate = as.numeric(scale(interception_rate, center = TRUE, scale = TRUE))
+  )
+
+# View the head of the standardized data
+head(nfl_passing_stats)
+```
+
+```{r}
+# Apply k-means clustering on the standardized data
+set.seed(123)  # for reproducibility
+qb_kmeans <- nfl_passing_stats %>%
+  select(std_avg_yards, std_interception_rate) %>%
+  kmeans(centers = 4, nstart = 1)  # using multiple starts to find a stable solution
+
+# Add cluster assignments back to the original data
+nfl_passing_stats <- nfl_passing_stats %>%
+  mutate(cluster = as.factor(qb_kmeans$cluster))
+
+```
+
+```{r}
+# Visualization using ggplot2
+ggplot(nfl_passing_stats, aes(x = avg_yards_gained, y = interception_rate, color = cluster)) +
+  geom_point(size = 2, alpha = 0.5) +
+  ggthemes::scale_color_colorblind() +  # using colorblind-friendly palette
+  labs(title = "NFL QBs Clustering Based on Performance Metrics",
+       x = "Average Yards Gained",
+       y = "Interception Rate (%)",
+       color = "Cluster") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  coord_fixed()  # adjust ratio according to the scale of data points
+
+```
+```{r}
+library(tidyverse)
+library(cluster)  # Ensuring cluster package is loaded for k-means
+
+# Function to perform clustering for each value of k
+qb_kmeans_function <- function(k, data) {
+  # Perform k-means clustering on the standardized data
+  kmeans_results <- data |>
+    select(std_avg_yards, std_interception_rate) |>
+    kmeans(centers = k, nstart = 30)  # Using 30 starts to ensure stability in results
+  
+  # Output results in a tidy format
+  kmeans_out <- tibble(
+    clusters = k,
+    total_wss = kmeans_results$tot.withinss
+  )
+  return(kmeans_out)
+}
+```
+
+```{r}
+# Number of clusters to search over
+n_clusters_search <- 2:12
+
+# Assuming nfl_passing_stats is already loaded and contains standardized columns
+# Iterate over each k to compute total WSS
+kmeans_search <- map_df(n_clusters_search, ~qb_kmeans_function(.x, nfl_passing_stats))
+# Plotting the results to find the optimal number of clusters
+kmeans_search |>
+  ggplot(aes(x = clusters, y = total_wss)) +
+  geom_line() +
+  geom_point(size = 4) +
+  labs(title = "Elbow Method for Determining Optimal k",
+       x = "Number of Clusters (k)",
+       y = "Total Within-Cluster Sum of Squares (WSS)") +
+  theme_minimal() +
+  scale_x_continuous(breaks = n_clusters_search)  # Ensures all k values are labeled
+```
+#Clustering 2 Interception rate and completion rate
+```{r}
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+
+# Select necessary variables and calculate completions
+nfl_passing <- nfl_passing %>%
+  select(passer_player_name, yards_gained, interception, complete_pass) %>%
+  mutate(complete_pass = as.numeric(complete_pass)) %>%
+  filter(!is.na(passer_player_name))  # Ensure no NA values in key columns
+
+# Create a table to count completions per QB
+completion_counts <- nfl_passing %>%
+  group_by(passer_player_name) %>%
+  summarise(total_completions = sum(complete_pass), .groups = 'drop')
+
+# Filter out QBs with fewer than 10 completions
+valid_qbs <- completion_counts %>%
+  filter(total_completions >= 10)
+
+# Join back to the original data to keep only relevant QBs
+nfl_passing_filtered <- nfl_passing %>%
+  semi_join(valid_qbs, by = "passer_player_name")
+
+nfl_passing_stats <- nfl_passing_filtered %>%
+  group_by(passer_player_name) %>%
+  summarise(
+    completion_rate= mean(complete_pass, na.rm = TRUE)*100,  # Average yards per attempt
+    interception_rate = mean(as.numeric(interception), na.rm = TRUE) * 100,  # Interception rate as a percentage
+    .groups = 'drop'
+  )
+
+nfl_passing_stats <- nfl_passing_stats %>%
+  mutate(
+    std_completion_rate = as.numeric(scale(completion_rate, center = TRUE, scale = TRUE)),
+    std_interception_rate = as.numeric(scale(interception_rate, center = TRUE, scale = TRUE))
+  )
+
+# View the head of the standardized data
+head(nfl_passing_stats)
+```
+
+```{r}
+set.seed(123)  # for reproducibility
+qb_kmeans <- nfl_passing_stats %>%
+  select(std_completion_rate, std_interception_rate) %>%
+  kmeans(centers = 4, nstart = 1
+         )  # using multiple starts to find a stable solution
+
+# Add cluster assignments back to the original data
+nfl_passing_stats <- nfl_passing_stats %>%
+  mutate(cluster = as.factor(qb_kmeans$cluster))
+
+ggplot(nfl_passing_stats, aes(x = completion_rate, y = interception_rate, color = cluster)) +
+  geom_point(size = 2, alpha = 0.5) +
+  ggthemes::scale_color_colorblind() +  # using colorblind-friendly palette
+  labs(title = "NFL QBs Clustering Based on Performance Metrics",
+       x = "Completion Rate (%)",
+       y = "Interception Rate (%)",
+       color = "Cluster") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  coord_fixed()  
+```
+
