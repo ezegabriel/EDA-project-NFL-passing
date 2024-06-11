@@ -8,27 +8,7 @@ library(cluster.datasets)
 
 # Build the data set
 library(tidyverse)
-library(nflfastR) # install.packages("nflverse")
-nfl_pbp <- load_pbp(2023)
-nfl_passing <- nfl_pbp |> 
-  filter(play_type == "pass", season_type == "REG", 
-         !is.na(epa), !is.na(posteam), posteam != "") |> 
-  select(# player info attempting the pass
-    passer_player_name, passer_player_id, posteam,
-    # info about the pass:
-    complete_pass, interception, yards_gained, touchdown,
-    pass_location, pass_length, air_yards, yards_after_catch, epa, wpa,
-    shotgun, no_huddle, qb_dropback, qb_hit, sack,
-    # context about the receiver:
-    receiver_player_name, receiver_player_id,
-    # team context
-    posteam, defteam, posteam_type,
-    # play and game context
-    play_id, yardline_100, side_of_field, down, qtr, play_clock,
-    half_seconds_remaining, game_half, game_id,
-    home_team, away_team, home_score, away_score,
-    # description of play
-    desc)
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
 
 
 # Data cleaning 
@@ -41,7 +21,6 @@ library(ggplot2)
 
 ## Complete-passing rate for each team -- Teams with high complete passing rate? 
 nfl_passing |> 
-  select(passer_player_name, passer_player_id, posteam, posteam_type, complete_pass, interception) |> 
   group_by(posteam) |> 
   summarize(total_pass = n(), num_complete = sum(complete_pass, na.rm = TRUE), complete_rate = num_complete / total_pass) |> 
   ggplot(aes(x = reorder(posteam, -complete_rate), y = complete_rate)) +
@@ -52,7 +31,6 @@ nfl_passing |>
 
 ## Interception rate for each team -- Teams with high interception rate?
 nfl_passing |>
-  select(passer_player_name, passer_player_id, posteam, posteam_type, complete_pass, interception) |> 
   group_by(posteam) |>
   summarize(total_pass = n(), num_interception = sum(interception, na.rm = TRUE),
             interception_rate = num_interception / total_pass) |>
@@ -65,6 +43,7 @@ nfl_passing |>
 
 ## Effect of pass length and pass location on complete-passing rate
 nfl_passing |>
+  drop_na(pass_location, pass_length) |>
   group_by(pass_location, pass_length) |>
   summarize(complete_rate = mean(complete_pass, na.rm = TRUE)) |>
   ggplot(aes(x = pass_length, y = complete_rate, fill = pass_location)) +
@@ -76,13 +55,15 @@ nfl_passing |>
 ## EPA by team and pass completion status
 nfl_passing |>
   group_by(posteam, complete_pass) |>
-  summarize(avg_epa = mean(epa, na.rm = TRUE)) |>
+  summarize(avg_epa = mean(epa, na.rm = TRUE)) |> 
   ggplot(aes(x = reorder(posteam, -avg_epa), y = avg_epa, fill = factor(complete_pass))) +
   geom_col() +
+  coord_flip() +
   labs(title = "Average EPA by Team and Pass Completion Status",
        x = "Team",
        y = "Average EPA",
        fill = "Complete Pass")
+  
 
   
 # Clustering 
@@ -113,13 +94,20 @@ rownames(M1_std) <- M1$posteam
 D <- as.matrix(dist(M1_std)); head(D)
 
 ## clustering analysis
-plot(stepFlexclust(M1_std, nrep = 20, k = 2:10), type = "l")
-a<- 47; while(a > 43){q <- cclust(M1_std, k = 5, save.data = TRUE); a <- info(q, "distsum")}; sort(clusters(q)); a
+# plot(stepFlexclust(M1_std, nrep = 20, k = 2:10), type = "l")
+#a<- 47; while(a > 43){q <- cclust(M1_std, k = 5, save.data = TRUE); a <- info(q, "distsum")}; sort(clusters(q)); a
+
+clusters_complete <- cutree(hclust(as.dist(D), method = "complete"), 4); clusters_complete
+
+q <- cclust(M1_std, k = 5, save.data = TRUE)
 
 plot(q, project = prcomp(M1_std), asp=1, simlines=FALSE, points = FALSE)
 text(M1_std, labels = rownames(M1_std), cex = 0.7)
 
 barplot(q)
+
+
+# clustering with dendrograms
 
 
 
