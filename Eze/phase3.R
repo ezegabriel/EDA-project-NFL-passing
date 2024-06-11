@@ -93,18 +93,16 @@ wpa_over_time |>
   scale_fill_viridis_c(option = 'plasma',
                        name = 'Density')+
   labs(
-    title = 'Smoothed Log-Transformed WPA Over Time by Score Differential',
+    title = 'Smoothed Log-Transformed WPA Over Time',
     x = 'Log(Seconds Remaining in Half + 1)',
     y = 'WPA'
   )+
   
   facet_wrap(~ game_half,
              scales = 'free_x', 
-             ncol = 1)
-  theme(legend.position = 'bottom',
-        panel.spacing = unit(2, 'lines'),
-        strip.background = element_blank(),
-        strip.text = element_text(face = "bold"),
-        axis.title.x = element_text(margin = margin(t = 10)),
-        axis.title.y = element_text(margin = margin(r = 10)),
-        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+             ncol = 1)+
+
+  theme(plot.title = element_text(hjust = 0.5, face='bold'),
+        panel.spacing = unit(.5, 'lines'),
+        legend.position = 'bottom'
+  )
