@@ -480,4 +480,61 @@ ggplot(nfl_passing_stats, aes(x = completion_rate, y = interception_rate, color 
   theme(legend.position = "bottom") +
   coord_fixed()  
 ```
+#Hierarchical clustering
+```{r}
+nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
 
+# Assuming nfl_passing is already loaded
+# Prepare the data
+nfl_team_stats <- nfl_passing %>%
+  filter(no_huddle == 1) %>%
+  mutate(complete_pass = as.numeric(complete_pass),  # Ensure complete_pass is numeric
+         no_huddle = as.numeric(no_huddle)) %>%  # Ensure no_huddle is numeric
+  group_by(posteam) %>%
+  summarise(
+    avg_completion_rate = mean(complete_pass, na.rm = TRUE) * 100,  # Completion rate per team
+    avg_yards_gained = mean(yards_gained, na.rm = TRUE),  # Average yards gained per team
+    total_no_huddle = sum(no_huddle, na.rm = TRUE),  # Total no huddle plays per team
+    .groups = 'drop'  # Remove grouping
+  )
+
+# View the prepared data
+print(nfl_team_stats)
+
+ggplot(nfl_team_stats, aes(x = avg_yards_gained, y = avg_completion_rate, size = total_no_huddle)) +
+  geom_point(alpha = 0.6, color = "blue") +
+  scale_size_continuous(name = "Total No Huddle Plays", range = c(3, 12)) +  # Adjust size range as needed
+  labs(title = "Impact of No Huddle on NFL Teams",
+       x = "Average Yards Gained",
+       y = "Completion Rate (%)") +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+```
+```{r}
+
+# Assuming nfl_passing is your loaded dataset
+# Filter for no huddle plays and prepare the data
+nfl_no_huddle_stats <- nfl_passing %>%
+  filter(no_huddle == 0) %>%  # Select only no huddle plays
+  mutate(complete_pass = as.numeric(complete_pass)) %>%
+  group_by(posteam) %>%
+  summarise(
+    avg_completion_rate = mean(complete_pass, na.rm = TRUE) * 100,  # Completion rate for no huddle plays
+    avg_yards_gained = mean(yards_gained, na.rm = TRUE),  # Average yards gained for no huddle plays
+    total_no_huddle = n(),  # Count of no huddle plays
+    .groups = 'drop'
+  )
+
+ggplot(nfl_no_huddle_stats, aes(x = avg_yards_gained, y = avg_completion_rate, size = total_no_huddle)) +
+  geom_point(alpha = 0.6, color = "blue") +
+  scale_size_continuous(name = "Total No Huddle Plays", range = c(3, 12)) +  # Adjust size range to better reflect your data
+  labs(title = "NFL Team Performance on Huddle Plays",
+       x = "Average Yards Gained (No Huddle)",
+       y = "Completion Rate (%) (No Huddle)") +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+
+
+```
