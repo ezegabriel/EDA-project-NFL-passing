@@ -106,3 +106,5 @@ wpa_over_time |>
         panel.spacing = unit(.5, 'lines'),
         legend.position = 'bottom'
   )
+
+
