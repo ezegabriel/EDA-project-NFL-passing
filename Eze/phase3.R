@@ -108,9 +108,3 @@ wpa_over_time |>
         axis.title.x = element_text(margin = margin(t = 10)),
         axis.title.y = element_text(margin = margin(r = 10)),
         plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
-
-
-
-
-
-
