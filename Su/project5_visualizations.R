@@ -1,22 +1,9 @@
-library(ape)
-library(MASS)
-library(rgl)
-library(igraph)
-library(flexclust)
-library(pald)
-library(cluster.datasets)
-
-# Build the data set
+# Load the data set
 library(tidyverse)
 nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
+spec(nfl_passing)
 
-
-# Data cleaning 
-passing_clean <- na.omit(nfl_passing)
-
-
-
-# Visualizations
+# exploring the dataset
 library(ggplot2)
 
 ## Complete-passing rate for each team -- Teams with high complete passing rate? 
@@ -41,17 +28,38 @@ nfl_passing |>
        y = "Interception Rate") +
   theme_minimal()
 
+
+# Data Visualization
+
+## visualization 1 (categorical)
 ## Effect of pass length and pass location on complete-passing rate
 nfl_passing |>
   drop_na(pass_location, pass_length) |>
   group_by(pass_location, pass_length) |>
   summarize(complete_rate = mean(complete_pass, na.rm = TRUE)) |>
   ggplot(aes(x = pass_length, y = complete_rate, fill = pass_location)) +
-  geom_col() +
+  geom_col(position = "fill") +
   labs(title = "Complete-passing Rate by Pass Length and Pass Location",
        x = "Pass Length",
        y = "Completion Rate")
 
+## or
+nfl_passing |>
+  drop_na(pass_location, pass_length) |>
+  group_by(pass_location, pass_length) |>
+  summarize(freq = sum(complete_pass, na.rm = TRUE),
+            complete_rate = mean(complete_pass, na.rm = TRUE)) |>
+  ggplot(aes(x = pass_length, y = pass_location)) +
+  geom_tile(aes(fill = freq), color = "white") +
+  geom_text(aes(label = scales::percent(complete_rate))) +
+  scale_fill_gradient2() +
+  labs(title = "Complete-passing Rate by Pass Length and Pass Location",
+       x = "Pass Length",
+       y = "Pass Location")
+
+
+
+## Visualization 2 (categorical)
 ## EPA by team and pass completion status
 nfl_passing |>
   group_by(posteam, complete_pass) |>
@@ -63,52 +71,57 @@ nfl_passing |>
        x = "Team",
        y = "Average EPA",
        fill = "Complete Pass")
-  
 
-  
-# Clustering 
 
-## clustering 1: 
+## Visualization 3 (categorical)
+nfl_passing |>
+  select(touchdown, complete_pass) |> 
+  table() |> 
+  mosaicplot(main = "Relationship between Pass Completion and Touchdown")
 
-M1 <- nfl_passing |> 
+
+## Visualization 4 (continuous)
+nfl_passing |> 
   group_by(posteam) |> 
-  summarize(total_pass = n(),
-            num_complete = sum(complete_pass, na.rm = TRUE),
-            complete_rate = num_complete / total_pass,
-            num_interception = sum(interception, na.rm = TRUE),
-            interception_rate = num_interception / total_pass,
-            touchdown_rate = mean(touchdown, na.rm = TRUE),
-            avg_yards_gained = mean(yards_gained, na.rm = TRUE),
-            avg_epa = mean(epa, na.rm = TRUE),
-            qb_hit_rate = mean(qb_hit, na.rm = TRUE),
-            sack_rate = mean(sack, na.rm = TRUE)
-            )
-  
-M1 <- M1[, -c(2,3,5)] 
-rownames(M1) <- M1$posteam
-M1_revised <- M1[, -1]
-
-# standardizing M1
-M1_std <-scale(M1_revised, scale = TRUE)[,]; head(M1_std)
-rownames(M1_std) <- M1$posteam
-D <- as.matrix(dist(M1_std)); head(D)
-
-## clustering analysis
-# plot(stepFlexclust(M1_std, nrep = 20, k = 2:10), type = "l")
-#a<- 47; while(a > 43){q <- cclust(M1_std, k = 5, save.data = TRUE); a <- info(q, "distsum")}; sort(clusters(q)); a
-
-clusters_complete <- cutree(hclust(as.dist(D), method = "complete"), 4); clusters_complete
-
-q <- cclust(M1_std, k = 5, save.data = TRUE)
-
-plot(q, project = prcomp(M1_std), asp=1, simlines=FALSE, points = FALSE)
-text(M1_std, labels = rownames(M1_std), cex = 0.7)
-
-barplot(q)
+  summarize(avg_yards_gained = mean(yards_gained), 
+            avg_epa = mean(epa)) |> 
+  ggplot(aes(x = avg_yards_gained, y = avg_epa)) +
+  geom_point(size = 2.5, alpha = 0.5) + 
+  geom_density2d() +
+  theme(legend.position = "bottom")
 
 
-# clustering with dendrograms
+nfl_passing |> 
+  group_by(posteam) |> 
+  summarize(avg_yards_gained = mean(yards_gained), 
+            avg_epa = mean(epa)) |> 
+  ggplot(aes(x = avg_yards_gained, y = avg_epa)) + 
+  stat_density2d(aes(fill = after_stat(level)),
+                 h = 0.2, bins = 10, geom = "polygon") +
+  scale_fill_gradient(low = "lightblue", 
+                      high = "purple") +
+  theme(legend.position = "bottom")
 
+
+
+## Visualization 5 (continuous)
+nfl_passing |> 
+  group_by(passer_player_name) |> 
+  summarize(total_passes = n(),
+            avg_yards = mean(yards_gained))|> 
+  ggplot(aes(x = total_passes, y = avg_yards)) +
+  geom_point(size = 2.5, alpha = 0.5) + 
+  geom_density2d() +
+  theme(legend.position = "bottom")
+
+nfl_passing |> 
+  group_by(passer_player_name) |> 
+  summarize(com_passes = sum(complete_pass == 1),
+            avg_yards = mean(yards_gained))|> 
+  ggplot(aes(x = com_passes, y = avg_yards)) +
+  geom_point(size = 2.5, alpha = 0.5) + 
+  geom_density2d() +
+  theme(legend.position = "bottom")
 
 
 
