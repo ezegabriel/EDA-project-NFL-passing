@@ -64,7 +64,48 @@ epa_by_down_shotgun |>
 
 
 
+# Viz 3: WPA over Time by Score Differential
 
+# Prepare data
+wpa_over_time <- nfl_passing |> 
+  filter(!is.na(wpa), 
+         !is.na(half_seconds_remaining), 
+         !is.na(home_score), 
+         !is.na(away_score),
+         !is.na(posteam_type)) |> 
+  mutate(
+    score_differential = ifelse(posteam_type == 'home', home_score - away_score, away_score - home_score))
+
+
+# Plotting
+wpa_over_time |> 
+  ggplot(aes (x = log(half_seconds_remaining + 1), 
+             y = wpa,
+             color = score_differential))+
+  geom_jitter(
+    alpha = .3,
+    size = .5
+  )+
+  geom_smooth(
+    method = 'loess', 
+    se = F,
+    color = 'black')+
+  scale_fill_viridis_c(option = 'plasma',
+                       name = 'Density')+
+  labs(
+    title = 'Smoothed Log-Transformed WPA Over Time',
+    x = 'Log(Seconds Remaining in Half + 1)',
+    y = 'WPA'
+  )+
+  
+  facet_wrap(~ game_half,
+             scales = 'free_x', 
+             ncol = 1)+
+
+  theme(plot.title = element_text(hjust = 0.5, face='bold'),
+        panel.spacing = unit(.5, 'lines'),
+        legend.position = 'bottom'
+  )
 
 
 
