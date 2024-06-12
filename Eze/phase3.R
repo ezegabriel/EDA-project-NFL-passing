@@ -101,7 +101,7 @@ score_diff_data |>
        color = "Game Half",
        fill = 'Score Differential') +
   scale_x_reverse() +
-  scale_y_continuous(breaks = seq(-1,4, by = 1))+
+  #scale_y_continuous(breaks = seq(-1,4, by = 1))+
   theme(
     legend.position = 'bottom',
     panel.grid.minor = element_blank(),
