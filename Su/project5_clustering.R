@@ -22,8 +22,8 @@ M1 <- nfl_passing |>
             avg_yards_gained = mean(yards_gained, na.rm = TRUE),
             avg_epa = mean(epa, na.rm = TRUE),
             qb_hit_rate = mean(qb_hit, na.rm = TRUE),
-            sack_rate = mean(sack, na.rm = TRUE)
-  )
+            )
+  
 
 M1 <- M1[, -c(2,3,5)] 
 rownames(M1) <- M1$posteam
@@ -35,7 +35,7 @@ rownames(M1_std) <- M1$posteam
 D <- as.matrix(dist(M1_std)); head(D)
 
 clusters_complete <- cutree(hclust(as.dist(D), method = "complete"), 4); clusters_complete
-q <- cclust(M1_std, k = 5, save.data = TRUE)
+q <- cclust(M1_std, k = 4, save.data = TRUE)
 
 plot(q, project = prcomp(M1_std), asp=1, simlines=FALSE, points = FALSE)
 text(M1_std, labels = rownames(M1_std), cex = 0.7)
