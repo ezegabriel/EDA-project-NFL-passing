@@ -64,48 +64,50 @@ epa_by_down_shotgun |>
 
 
 
-# Viz 3: WPA over Time by Score Differential
+# Viz 3: Change in Score Differential by Time Remaining
 
-# Prepare data
-wpa_over_time <- nfl_passing |> 
-  filter(!is.na(wpa), 
-         !is.na(half_seconds_remaining), 
+library(dplyr)
+library(ggplot2)
+
+
+# Prepare the data
+score_diff_data <- nfl_passing |>
+  filter(!is.na(half_seconds_remaining), 
          !is.na(home_score), 
-         !is.na(away_score),
-         !is.na(posteam_type)) |> 
+         !is.na(away_score), 
+         !is.na(posteam_type), 
+         !is.na(game_half)) |>
   mutate(
-    score_differential = ifelse(posteam_type == 'home', home_score - away_score, away_score - home_score))
+    score_differential = ifelse(posteam_type == "home", home_score - away_score, away_score - home_score),
+    score_differential_change = score_differential - lag(score_differential, default = first(score_differential)), # Tally & Calculates the change in score differential from the preceeding play
+    reversed_half_seconds_remaining = max(half_seconds_remaining) - half_seconds_remaining # Reverse time variable to count down instead of up instead of up
+  ) |>
+  filter(!is.na(score_differential_change))
 
 
 # Plotting
-wpa_over_time |> 
-  ggplot(aes (x = log(half_seconds_remaining + 1), 
-             y = wpa,
-             color = score_differential))+
-  geom_jitter(
-    alpha = .3,
-    size = .5
-  )+
-  geom_smooth(
-    method = 'loess', 
-    se = F,
-    color = 'black')+
-  scale_fill_viridis_c(option = 'plasma',
-                       name = 'Density')+
-  labs(
-    title = 'Smoothed Log-Transformed WPA Over Time',
-    x = 'Log(Seconds Remaining in Half + 1)',
-    y = 'WPA'
-  )+
-  
-  facet_wrap(~ game_half,
-             scales = 'free_x', 
-             ncol = 1)+
-
-  theme(plot.title = element_text(hjust = 0.5, face='bold'),
-        panel.spacing = unit(.5, 'lines'),
-        legend.position = 'bottom'
+score_diff_data |> 
+  ggplot(aes(x = reversed_half_seconds_remaining,
+             y = score_differential_change,
+             color = game_half))+
+  geom_smooth(method = "loess", se = F) +
+  geom_hline(yintercept = 0,
+             linetype = 'dashed',
+             color = 'black')+
+  scale_color_manual(values = c("Half1" = "blue", "Half2" = "green", "Overtime" = "red"))+
+  labs(title = "Average Change in Score Differential by Time Remaining",
+       x = "Time in Half (seconds remaining)",
+       y = "Change in Score Differential",
+       color = "Game Half",
+       fill = 'Score Differential') +
+  scale_x_reverse() +
+  #scale_y_continuous(breaks = seq(-1,4, by = 1))+
+  theme(
+    legend.position = 'bottom',
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey80"),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10)),
+    plot.title = element_text(hjust = 0, size = 13, face = "bold")
   )
-
-
-
+  
