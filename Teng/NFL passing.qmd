@@ -554,6 +554,8 @@ interception_completion + interception_avgyardsgain + plot_layout(guides = "coll
 
 #cluster final
 ```{r}
+library(readr)
+library(tidyverse)
 nfl_passing <- read_csv("https://raw.githubusercontent.com/36-SURE/36-SURE.github.io/main/data/nfl_passing.csv")
 
 # Select necessary variables and calculate completions
@@ -601,7 +603,7 @@ nfl_passing_cluster1 <- nfl_passing_stats %>%
   mutate(cluster = as.factor(qb_kmeans$cluster))
 
 interception_avgyardsgain <- nfl_passing_cluster1 %>% ggplot(aes(x = avg_yards_gained, y = interception_rate, color = cluster)) +
-  geom_point(size = 2, alpha = 0.5) +
+  geom_point(size = 3, alpha = 0.5) +
   ggthemes::scale_color_colorblind() +  # using colorblind-friendly palette
   labs(title = "NFL QBs Clustering Based on Performance Metrics",
        x = "Average Yards Gained",
@@ -625,7 +627,7 @@ nfl_passing_cluster2 <- nfl_passing_stats %>%
   mutate(cluster = as.factor(qb_kmeans$cluster))
 
 interception_completion <- nfl_passing_cluster2 %>% ggplot (aes(x = completion_rate, y = interception_rate, color = cluster)) +
-  geom_point(size = 2, alpha = 0.5) +
+  geom_point(size = 3, alpha = 0.5) +
   ggthemes::scale_color_colorblind() +  # using colorblind-friendly palette
   labs(title = "NFL QBs Clustering Based on Performance Metrics",
        x = "Completion Rate (%)",
