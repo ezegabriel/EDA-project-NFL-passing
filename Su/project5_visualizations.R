@@ -39,9 +39,10 @@ nfl_passing |>
   summarize(complete_rate = mean(complete_pass, na.rm = TRUE)) |>
   ggplot(aes(x = pass_length, y = complete_rate, fill = pass_location)) +
   geom_col(position = "dodge") +
-  labs(title = "Complete-passing Rate by Pass Length and Pass Location",
+  labs(title = "Complete Pass Rate by Pass Length & Pass Location",
        x = "Pass Length",
-       y = "Completion Rate")
+       y = "Completion Rate", 
+       fill = "Pass Location")
 
 ## or
 nfl_passing |>
